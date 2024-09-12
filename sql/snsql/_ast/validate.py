@@ -122,14 +122,14 @@ class QueryConstraints:
             if not any([tc.is_key for tc in tcs]):
                 if not any([tc.row_privacy for tc in tcs]):
                     raise ValueError("Source relation must include a private key column: " + str(r))
-        if type(r) is Join:
-            raise ValueError("Support for JOIN queries is currently disabled")
-            if type(r.criteria) is not UsingJoinCriteria:
-                raise ValueError("We only support JOIN with USING semantics currently")
-            ids = [str(i).lower() for i in r.criteria.identifiers]
-            if self.keycol.lower() not in ids:
-                print(ids)
-                print(self.keycol)
-                raise ValueError("All JOINS must include the private key")
+        # if type(r) is Join:
+        #     raise ValueError("Support for JOIN queries is currently disabled")
+        #     if type(r.criteria) is not UsingJoinCriteria:
+        #         raise ValueError("We only support JOIN with USING semantics currently")
+        #     ids = [str(i).lower() for i in r.criteria.identifiers]
+        #     if self.keycol.lower() not in ids:
+        #         print(ids)
+        #         print(self.keycol)
+        #         raise ValueError("All JOINS must include the private key")
         for c in [ch for ch in r.children() if ch is not None]:
             self.walk_relations(c)

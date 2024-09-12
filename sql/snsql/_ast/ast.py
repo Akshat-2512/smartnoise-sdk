@@ -91,10 +91,8 @@ class Query(SqlRel):
         for ne in self.select.namedExpressions:
             if type(ne.expression) is not AllColumns:
                 name = ne.column_name()
-
                 _symbol_expr = ne.expression.symbol(relations)
                 _symbol = Symbol(_symbol_expr, name)
-
                 # annotate selects that reference GROUP BY column
                 _symbol.is_grouping_column = False
                 for ge in self._grouping_symbols:
@@ -119,6 +117,7 @@ class Query(SqlRel):
                     delta = self.privacy.delta
                     if not _symbol.is_grouping_column:
                         sensitivity = _symbol.expression.sensitivity()
+                        print(type(_symbol.expression), _symbol.name, _symbol.expression.sensitivity())
                         t = _symbol.expression.type()
                         if t in ['int', 'float'] and sensitivity is not None:
                             stat = 'count' if _symbol.is_count else 'sum'
@@ -129,11 +128,10 @@ class Query(SqlRel):
                             if _symbol.is_key_count:
                                 mech.delta = delta
                             _symbol.mechanism = mech
-
                 _symbols.append(_symbol)
-
                 # attach to named expression for xpath in accuracy.py
                 ne.m_symbol = _symbol
+
             else:
                 # It's SELECT *, expand out to all columns
                 syms = ne.expression.all_symbols(relations)

@@ -273,7 +273,6 @@ class PrivateReader(Reader):
             raise ValueError("Please pass a Query AST object to _rewrite_ast()")
         query_max_contrib = query.max_ids
         self._options.max_contrib = query_max_contrib
-
         self._refresh_options()
         query = self.rewriter.query(query)
         query.compare = self.reader.compare
@@ -504,18 +503,20 @@ class PrivateReader(Reader):
         self._refresh_options()
 
         subquery, query = self._rewrite_ast(query)
-
+        print(subquery)
         if pre_aggregated is not None:
             exact_aggregates = self._check_pre_aggregated_columns(pre_aggregated, subquery)
+            print("exact1",exact_aggregates)
         else:
             exact_aggregates = self._get_reader(subquery)._execute_ast(subquery)
-
+            print("exact2",exact_aggregates)
         _accuracy = None
         if accuracy:
             raise NotImplementedError("Simple accuracy has been removed.  Please see documentation for information on estimating accuracy.")
 
         syms = subquery._select_symbols
         source_col_names = [s.name for s in syms]
+
 
         # tell which are counts, in column order
         is_count = [s.expression.is_count for s in syms]
@@ -525,7 +526,8 @@ class PrivateReader(Reader):
         check_sens = [m for m in mechs if m]
         if any([m.sensitivity is np.inf for m in check_sens]):
             raise ValueError(f"Attempting to query an unbounded column")
-
+        for m in mechs:
+            print("sens",  m.lower, m.upper , m.sensitivity)
         kc_pos = self._get_keycount_position(subquery)
 
         def randomize_row_values(row_in):

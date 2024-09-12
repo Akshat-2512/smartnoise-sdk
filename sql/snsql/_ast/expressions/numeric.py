@@ -93,6 +93,9 @@ class ArithmeticExpression(SqlExpr):
                 return ls + rs
             elif self.op == "*":
                 return ls * rs
+            ## added ( - ) for sensitivity reduction ??? 
+            #elif self.op == "-":
+                #return abs(ls - rs)
             else:
                 return None
 

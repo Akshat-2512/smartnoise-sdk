@@ -103,9 +103,11 @@ class Rewriter:
             Push a sum or count expression to child scope
             and convert to a sum
         """
+
         new_name = scope.push_name(AggFunction(exp.name, exp.quantifier, exp.expression))
 
         new_exp = Column(new_name)
+
         return new_exp
 
     def rewrite_agg_expression(self, agg_exp, scope):
@@ -189,11 +191,10 @@ class Rewriter:
                         expr = Column(child_scope.push_name(ge.expression))
             if is_grouping:
                 select.append(NamedExpression(ne.name, expr))
+               
             else:
-                select.append(self.rewrite_outer_named_expression(ne, child_scope))
-
+                select.append(self.rewrite_outer_named_expression(ne, child_scope)) 
         select = Select(query.select.quantifier, select)
-
         subquery = Query(
             child_scope.select(), query.source, query.where, query.agg, None, None, None
         )
@@ -354,6 +355,7 @@ class Scope:
             dictionary if the expression does not exist in scope.
         """
         # see if the proposed name is taken
+
         if proposed is not None:
             if proposed in self.expressions:
                 if self.expressions[proposed] == expression:
@@ -371,9 +373,10 @@ class Scope:
                 names.append(name)
         if len(names) > 0:
             return names[0]
-
+        
         # see if the expression has been used under the symbol name
         proposed = expression.symbol_name()
+
         if proposed in self.expressions:
             if self.expressions[proposed] == expression:
                 return proposed
