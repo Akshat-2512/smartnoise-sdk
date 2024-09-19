@@ -1,6 +1,8 @@
 import snsql
 from snsql import Privacy
 import pandas as pd
+import math
+import random
 import psycopg2 as psql
 csv_path = '../datasets/PUMS.csv'
 meta_path = '../datasets/postgres.yaml'
@@ -32,8 +34,45 @@ reader = snsql.from_connection(conn, privacy=privacy, metadata=meta_path)
 
 #  INNER JOIN
 # SELECT Customers.CustomerName, Orders.OrderID, Orders.OrderDate FROM Customers INNER JOIN Orders ON Customers.CustomerID = Orders.CustomerID;
-# result_IJ = reader.execute('SELECT SUM(c1) FROM (SELECT CustomerID as c2 FROM public.Customers) INNER JOIN (SELECT CustomerID as c1 FROM Orders) ON c1 = c2')
-# print(result_IJ)
+def laplace_noise(scale=1.0):
+    # Generate a uniform random variable between -0.5 and 0.5
+    u = random.random() - 0.5
+    
+    # Determine the sign based on the value of u
+    sign = -1.0 if u < 0 else 1.0
+    
+    # Compute the Laplace noise using the transformation
+    noise = sign * math.log(1 - 2 * abs(u))
+    
+    # Apply the scale factor to the noise
+    return scale * noise
+
+result_IJ = reader.execute('SELECT COUNT(*) AS s FROM (SELECT CustomerID as c2  FROM public.Customers) INNER JOIN (SELECT CustomerID as c1 , orderid as ord FROM Orders) ON c1 = c2')
+print(float(result_IJ[1][0]) + laplace_noise(scale= 10.45476570491571 )) 
+k=0
+s_prev=0
+s=0
+beta = 0
+while (s >= s_prev and k < 5):
+    mfxr1 = 1 + k # customers max atr for customerID
+    s1= 1
+    mfxr2 = 2 + k # orders max atr for customerID
+    s2 = 1
+
+    sk= 2 + k
+    epsilon = 1 
+    delta = 0.000001
+    beta = epsilon/(2*math.log(2/delta))
+    s_prev = s  
+    s = math.exp(-beta*k)*sk
+    k= k+1
+
+# add laplace noise of 
+# noise = 2*s/ epsilon
+noise  = 2*s
+# 45.720677334346
+print(noise)
+
 
 
 # LEFT JOIN 
@@ -63,7 +102,7 @@ reader = snsql.from_connection(conn, privacy=privacy, metadata=meta_path)
 
 # SELF JOIN 
 # SELECT A.CustomerName AS Customer1, B.CustomerName AS Customer2 FROM Customers A INNER JOIN Customers B ON A.City = B.City AND A.CustomerID = B.CustomerID;
-result_SJ = reader.execute('SELECT COUNT(*) FROM (SELECT CustomerName AS Customer1 , City AS A_city FROM CUSTOMERS) AS A INNER JOIN (SELECT CustomerName AS Customer2, City AS B_city FROM CUSTOMERS) AS B ON A_city = B_city')
-print(result_SJ)
+# result_SJ = reader.execute('SELECT COUNT(*) FROM (SELECT CustomerName AS Customer1 , City AS A_city FROM CUSTOMERS) AS A INNER JOIN (SELECT CustomerName AS Customer2, City AS B_city FROM CUSTOMERS) AS B ON A_city = B_city')
+# print(result_SJ)
 
 
