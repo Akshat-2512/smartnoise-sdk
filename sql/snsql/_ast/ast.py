@@ -318,6 +318,7 @@ class Relation(SqlRel):
         self.privacy = privacy
         relations = [self.primary] + [j for j in self.joins]
         for r in relations:
+            print(r)
             r.load_symbols(metadata, privacy)
         # check the join keys
         if len(self.joins) > 0:

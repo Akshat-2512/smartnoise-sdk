@@ -27,6 +27,7 @@ class PandasReader(SqlReader):
                 if metadata is None:
                     raise ValueError("Must pass in table_name if metadata is not provided")
                 table_names = list(self.metadata.m_tables.keys())
+                print(table_names)
                 if len(table_names) > 1:
                     raise ValueError(
                         "Must pass in table_name if metadata has more than one table"
