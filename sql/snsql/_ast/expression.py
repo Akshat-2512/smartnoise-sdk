@@ -55,6 +55,12 @@ class NestedExpression(SqlExpr):
     def type(self):
         return self.expression.type()
 
+    def _upper(self):
+        return self.expression._upper()
+    
+    def _lower(self):
+        return self.expression._lower()
+
     def sensitivity(self):
         return self.expression.sensitivity()
 
@@ -97,6 +103,12 @@ class NamedExpression(SqlExpr):
 
     def type(self):
         return self.expression.type()
+
+    def _lower(self):
+        return self.expression._lower()
+    
+    def _uppper(self):
+        return self.expression._upper()
 
     def sensitivity(self):
         return self.expression.sensitivity()

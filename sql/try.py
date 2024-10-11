@@ -19,6 +19,9 @@ privacy = Privacy(epsilon=1.0, delta=0.01)
 
 reader = snsql.from_connection(conn, privacy=privacy, metadata=meta_path)
 
+result = reader.execute("SELECT sum( num1 ) FROM public.my_table2")
+
+print(result)
 
 #  result2 is re-written query for SELECT COUNT(*) FROM public.my_table2 AS t1 JOIN pulic.my_table3 AS t0 t1.num1 = t0.num1  
 # result2 = reader.execute('SELECT COUNT(str1) FROM (SELECT num1 AS c1 FROM public.my_table2) AS t1 INNER JOIN (SELECT  num1 AS c2, str1 FROM public.my_table3) AS t0 ON c1 = c2')
@@ -34,44 +37,44 @@ reader = snsql.from_connection(conn, privacy=privacy, metadata=meta_path)
 
 #  INNER JOIN
 # SELECT Customers.CustomerName, Orders.OrderID, Orders.OrderDate FROM Customers INNER JOIN Orders ON Customers.CustomerID = Orders.CustomerID;
-def laplace_noise(scale=1.0):
-    # Generate a uniform random variable between -0.5 and 0.5
-    u = random.random() - 0.5
+# def laplace_noise(scale=1.0):
+#     # Generate a uniform random variable between -0.5 and 0.5
+#     u = random.random() - 0.5
     
-    # Determine the sign based on the value of u
-    sign = -1.0 if u < 0 else 1.0
+#     # Determine the sign based on the value of u
+#     sign = -1.0 if u < 0 else 1.0
     
-    # Compute the Laplace noise using the transformation
-    noise = sign * math.log(1 - 2 * abs(u))
+#     # Compute the Laplace noise using the transformation
+#     noise = sign * math.log(1 - 2 * abs(u))
     
-    # Apply the scale factor to the noise
-    return scale * noise
+#     # Apply the scale factor to the noise
+#     return scale * noise
 
-result_IJ = reader.execute('SELECT COUNT(*) AS s FROM (SELECT CustomerID as c2  FROM public.Customers) INNER JOIN (SELECT CustomerID as c1 , orderid as ord FROM Orders) ON c1 = c2')
-print(float(result_IJ[1][0]) + laplace_noise(scale= 10.45476570491571 )) 
-k=0
-s_prev=0
-s=0
-beta = 0
-while (s >= s_prev and k < 5):
-    mfxr1 = 1 + k # customers max atr for customerID
-    s1= 1
-    mfxr2 = 2 + k # orders max atr for customerID
-    s2 = 1
+# result_IJ = reader.execute('SELECT COUNT(*) AS s FROM (SELECT CustomerID as c2  FROM public.Customers) INNER JOIN (SELECT CustomerID as c1 , orderid as ord FROM Orders) ON c1 = c2')
+# print(float(result_IJ[1][0]) + laplace_noise(scale= 10.45476570491571 )) 
+# k=0
+# s_prev=0
+# s=0
+# beta = 0
+# while (s >= s_prev and k < 5):
+#     mfxr1 = 1 + k # customers max atr for customerID
+#     s1= 1
+#     mfxr2 = 2 + k # orders max atr for customerID
+#     s2 = 1
 
-    sk= 2 + k
-    epsilon = 1 
-    delta = 0.000001
-    beta = epsilon/(2*math.log(2/delta))
-    s_prev = s  
-    s = math.exp(-beta*k)*sk
-    k= k+1
+#     sk= 2 + k
+#     epsilon = 1 
+#     delta = 0.000001
+#     beta = epsilon/(2*math.log(2/delta))
+#     s_prev = s  
+#     s = math.exp(-beta*k)*sk
+#     k= k+1
 
-# add laplace noise of 
-# noise = 2*s/ epsilon
-noise  = 2*s
-# 45.720677334346
-print(noise)
+# # add laplace noise of 
+# # noise = 2*s/ epsilon
+# noise  = 2*s
+# # 45.720677334346
+# print(noise)
 
 
 

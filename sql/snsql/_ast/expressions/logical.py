@@ -30,6 +30,12 @@ class BooleanCompare(SqlExpr):
     def type(self):
         return "boolean"
 
+    def _lower(self):
+        return 0
+    
+    def _upper(self):
+        return 1
+
     def sensitivity(self):
         return 1
 
@@ -87,6 +93,12 @@ class ColumnBoolean(SqlExpr):
     def type(self):
         return "boolean"
 
+    def _lower(self):
+        return 0
+    
+    def _upper(self):
+        return 1
+
     def sensitivity(self):
         return 1
 
@@ -109,6 +121,12 @@ class NestedBoolean(SqlExpr):
     def type(self):
         return self.expression.type()
 
+    def _lower(self):
+        return self.expression._lower()
+    
+    def _uppper(self):
+        return self.expression._upper()
+
     def sensitivity(self):
         return self.expression.sensitivity()
 
@@ -130,6 +148,12 @@ class LogicalNot(SqlExpr):
 
     def type(self):
         return "boolean"
+
+    def _lower(self):
+        return 0
+    
+    def _uppper(self):
+        return 1
 
     def sensitivity(self):
         return 1
@@ -289,6 +313,25 @@ class CaseExpression(SqlExpr):
             return "float"
         else:
             return "unknown"
+        
+    def _lower(self):
+        t = [self.else_expr._lower()] if self.else_expr is not None else []
+        t = t + [we._lower() for we in self.when_exprs]
+        t = [s for s in t if s is not None]
+        if len(t) > 0:
+            return min(t)
+        else:
+            return None
+        
+    def _upper(self):
+        t = [self.else_expr._upper()] if self.else_expr is not None else []
+        t = t + [we._upper() for we in self.when_exprs]
+        t = [s for s in t if s is not None]
+        if len(t) > 0:
+            return max(t)
+        else:
+            return None
+
 
     def sensitivity(self):
         t = [self.else_expr.sensitivity()] if self.else_expr is not None else []
@@ -337,6 +380,12 @@ class WhenExpression(SqlExpr):
 
     def type(self):
         return self.then.type()
+
+    def _upper (self):
+        return self.then._upper()
+
+    def _lower(self):
+        return self.then._lower()
 
     def sensitivity(self):
         return self.then.sensitivity()

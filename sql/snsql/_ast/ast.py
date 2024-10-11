@@ -117,7 +117,6 @@ class Query(SqlRel):
                     delta = self.privacy.delta
                     if not _symbol.is_grouping_column:
                         sensitivity = _symbol.expression.sensitivity()
-                        print(type(_symbol.expression), _symbol.name, _symbol.expression.sensitivity())
                         t = _symbol.expression.type()
                         if t in ['int', 'float'] and sensitivity is not None:
                             stat = 'count' if _symbol.is_count else 'sum'
@@ -318,7 +317,6 @@ class Relation(SqlRel):
         self.privacy = privacy
         relations = [self.primary] + [j for j in self.joins]
         for r in relations:
-            print(r)
             r.load_symbols(metadata, privacy)
         # check the join keys
         if len(self.joins) > 0:
@@ -580,6 +578,12 @@ class TableColumn(SqlExpr):
 
     def type(self):
         return self.valtype
+
+    def _upper(self):
+        return self.upper
+    
+    def _lower(self):
+        return self.lower
 
     def sensitivity(self):
         if self.valtype in ["int", "float"]:

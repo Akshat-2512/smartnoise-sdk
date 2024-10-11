@@ -18,7 +18,7 @@ class Validate(object):
             requirements for differential privacy queries.
         """
         qc = QueryConstraints(query, metadata)
-        # qc.validate_all()
+        qc.validate_all()
 
 
 class QueryConstraints:
@@ -63,9 +63,9 @@ class QueryConstraints:
             if n_aggs > 0:
                 # It's a column that uses an aggregate, such as SUM, COUNT, etc.
                 for ac in aggfuncs:
-                    if not isinstance(ac.expression, (TableColumn, AllColumns)):
+                    # if not isinstance(ac.expression, (TableColumn, AllColumns)):
                         # should allow literals here?  any scalar that doesn't include a 
-                        raise ValueError("We don't support aggregation over expressions: " + str(ac))
+                        # raise ValueError("We don't support aggregation over expressions: " + str(ac))
                     if ac.expression.type() not in ['int', 'float', 'bool'] and not ac.name == 'COUNT':
                         raise ValueError(f"Aggregations must be over numeric or boolean, got {ac.expression.type()} in {str(ac)}")
             else:

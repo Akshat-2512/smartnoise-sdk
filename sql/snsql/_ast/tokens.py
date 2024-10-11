@@ -335,6 +335,12 @@ class SqlExpr(Sql):
     def type(self):
         return "unknown"
 
+    def _upper(self):
+        return None
+    
+    def _lower(self):
+        return None
+
     def sensitivity(self):
         return None
 

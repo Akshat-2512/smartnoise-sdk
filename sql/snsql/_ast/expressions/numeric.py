@@ -65,37 +65,200 @@ class ArithmeticExpression(SqlExpr):
         elif self.op in ["*", "+", "-"]:
             return min([self.left.type(), self.right.type()])
 
+    def _lower(self):
+        ll = self.left._lower()
+        ul = self.left._upper()
+        ur = self.right._upper()
+        lr = self.right._lower()
+        if ( ur is None or lr is None ) and (ul is None or ll is None):
+            return None
+        if ( ur is None or lr is None ) and type(self.right) is Literal and self.right.type() in ["int", "float"]:
+            v = self.right.value
+            if self.op in ["+"]:
+                return min(ll+v , ul+v)
+            elif self.op in ["-"]:
+                return min(ll-v , ul-v)
+            elif self.op == "%":
+                if v ==0:
+                    raise ValueError(f"undefined")
+                return 0
+            elif self.op == "*":
+                return min(ll*v , ul*v)
+            elif self.op == "/":
+                if v == 0:
+                    raise ValueError(f"division by zero")
+                else:
+                    return min(ll/v , ul/v)
+            else:
+                return None
+            
+        if (ul is None or ll is None) and type(self.left) is Literal and self.left.type() in ["int", "float"]:
+            v = self.left.value
+            if self.op in ["+"]:
+                return min(v+lr, v+ur)
+            elif self.op in ["-"]:
+                return min(v-lr, v-ur)
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return 0
+            elif self.op == "*":
+                return min(v*lr, v*ur)
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return min(v/lr, v/ur)
+            else:
+                return None
+        if (ul is not None and ll is not None)  and ( ur is not None and lr is not None ):
+            if self.op in ["+"]:
+                return min((ll+lr),(ul+ur), (ul+lr), (ll+ur))
+            elif self.op in ["-"]:
+                return min((ll-lr),(ul-ur), (ul-lr), (ll-ur))
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return min((ll%lr),(ul%ur), (ul%lr), (ll%ur))
+            elif self.op == "*":
+                return min((ll*lr),(ul*ur), (ul*lr), (ll*ur))
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return  min((ll/lr),(ul/ur), (ul/lr), (ll/ur))
+            else:
+                return None
+    def _upper(self):
+        ll = self.left._lower()
+        ul = self.left._upper()
+        ur = self.right._upper()
+        lr = self.right._lower()
+        if ( ur is None or lr is None ) and (ul is None or ll is None):
+            return None
+        if ( ur is None or lr is None ) and type(self.right) is Literal and self.right.type() in ["int", "float"]:
+            v = self.right.value
+            if self.op in ["+"]:
+                return max(ll+v , ul+v)
+            elif self.op in ["-"]:
+                return max(ll-v , ul-v)
+            elif self.op == "%":
+                if v ==0:
+                    raise ValueError(f"undefined")
+                return 0
+            elif self.op == "*":
+                return max(ll*v , ul*v)
+            
+            elif self.op == "/":
+                if v == 0:
+                    raise ValueError(f"division by zero")
+                else:
+                    return max(ll/v , ul/v)
+            else:
+                return None
+            
+        if (ul is None or ll is None) and type(self.left) is Literal and self.left.type() in ["int", "float"]:
+            v = self.left.value
+            if self.op in ["+"]:
+                return max(v+lr, v+ur)
+            elif self.op in ["-"]:
+                return max(v-lr, v-ur)
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return 0
+            elif self.op == "*":
+                return max(v*lr, v*ur)
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return max(v/lr, v/ur)
+            else:
+                return None
+        if (ul is not None and ll is not None) and ( ur is not None and lr is not None ):
+            if self.op in ["+"]:
+                return max((ll+lr),(ul+ur), (ul+lr), (ll+ur))
+            elif self.op in ["-"]:
+                return max((ll-lr),(ul-ur), (ul-lr), (ll-ur))
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return max((ll%lr),(ul%ur), (ul%lr), (ll%ur))
+            elif self.op == "*":
+                return max((ll*lr),(ul*ur), (ul*lr), (ll*ur))
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return  max((ll/lr),(ul/ur), (ul/lr), (ll/ur))
+            else:
+                return None
+
     def sensitivity(self):
         ls = self.left.sensitivity()
         rs = self.right.sensitivity()
+        ll = self.left._lower()
+        ul = self.left._upper()
+        ur = self.right._upper()
+        lr = self.right._lower()
+        # not sure about modulus sensitivty calculation
         if rs is None and ls is None:
             return None
         if rs is None and type(self.right) is Literal and self.right.type() in ["int", "float"]:
-            if self.op in ["+", "-"]:
-                return ls
+            v = self.right.value
+            if self.op in ["+"]:
+                return max(abs(ll+v), abs(ul+v))
+            elif self.op in ["-"]:
+                return max(abs(ll-v), abs(ul-v))
             elif self.op == "%":
+                if v ==0:
+                    raise ValueError(f"undefined")
                 return self.right.value
             elif self.op == "*":
-                return ls * self.right.value
+                return max(abs(ll*v), abs(ul*v))
             elif self.op == "/":
-                return ls / self.right.value
+                if v == 0:
+                    raise ValueError(f"division by zero")
+                else:
+                    return max(abs(ll/v), abs(ul/v))
             else:
                 return None
         if ls is None and type(self.left) is Literal and self.left.type() in ["int", "float"]:
-            if self.op in ["+", "-"]:
-                return rs
+            v = self.left.value
+            if self.op in ["+"]:
+                return max(abs(v+lr), abs(v+ur))
+            elif self.op in ["-"]:
+                return max(abs(v-lr), abs(v-ur))
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return max(abs(v%lr),abs(v%ur))
             elif self.op == "*":
-                return rs * self.left.value
+                return max(abs(lr*v), abs(ur*v))
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return max(abs(v/lr), abs(v/ur))
             else:
                 return None
         if ls is not None and rs is not None:
-            if self.op == "+":
-                return ls + rs
+            if self.op in ["+"]:
+                return max(abs(ll+lr), abs(ul+ur)  , abs(ul+lr), abs(ll+ur))
+            elif self.op in ["-"]:
+                return max(abs(ll-lr), abs(ul-ur) , abs(ul-lr), abs(ll-ur))
+            elif self.op == "%":
+                if lr*ur<=0:
+                    raise ValueError(f"undefined")
+                return max(abs(ll%lr), abs(ul%ur) , abs(ul%lr), abs(ll%ur))
             elif self.op == "*":
-                return ls * rs
-            ## added ( - ) for sensitivity reduction ??? 
-            #elif self.op == "-":
-                #return abs(ls - rs)
+                return max(abs(ll*lr), abs(ul*ur)  , abs(ul*lr), abs(ll*ur))
+            elif self.op == "/":
+                if lr*ur<=0:
+                    raise ValueError(f"unbounded output")
+                else:
+                    return  max(abs(ll/lr), abs(ul/ur)  , abs(ul/lr), abs(ll/ur))
             else:
                 return None
 
