@@ -283,7 +283,6 @@ class MathFunction(SqlExpr):
     def __init__(self, name, expression):
         self.name = name
         self.expression = expression
-
     def symbol_name(self):
         prefix = self.name.lower() + "_"
         return self.prepend(prefix, self.expression.symbol_name())
@@ -305,6 +304,117 @@ class MathFunction(SqlExpr):
     def type(self):
         return "float"
 
+    def _lower(self):
+        l = self.expression._lower()
+        u = self.expression._upper()
+        if funcs[self.name.lower()] == "abs":
+            if l*u<=0:
+                return 0
+        elif funcs[self.name.lower()] == "square":
+            if l*u<=0:
+                return 0
+        elif funcs[self.name.lower()] == "sin":
+            k = 3 * np.pi / 2
+
+            # Find the smallest integer n such that L <= k + 2n*pi
+            n_start = np.ceil((l - k) / (2 * np.pi))
+            
+            # Find the largest integer n such that k + 2n*pi <= U
+            n_end = np.floor((u - k) / (2 * np.pi))
+            
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + 2 * n_start * np.pi
+                return -1
+            else: 
+                return min(np.sin(l),np.sin(u))
+            
+        elif funcs[self.name.lower()] == "cos":
+            k =np.pi  # This is the base case where cos(x) = -1
+
+            # Find the smallest integer n such that L <= k + 2n*pi
+            n_start = np.ceil((l- k) / (2 * np.pi))
+
+            # Find the largest integer n such that k + 2n*pi <= U
+            n_end = np.floor((u - k) / (2 * np.pi))
+
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + 2 * n_start * np.pi  # Any valid x in the range
+                return -1
+            else: 
+                return min(np.cos(l),np.cos(u))
+        elif funcs[self.name.lower()] == "tan":
+            k = -np.pi / 2  # This is the base point where the asymptote occurs.
+
+            # Find the smallest integer n such that L <= k + n*pi
+            n_start = np.ceil((l - k) / np.pi)
+
+            # Find the largest integer n such that k + n*pi <= U
+            n_end = np.floor((u - k) / np.pi)
+
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + n_start * np.pi  # Any valid x in the range
+                return -np.inf
+            else:
+                return min(np.tan(l),np.tan(u))
+        return min(funcs[self.name.lower()](l),funcs[self.name.lower()](u))
+    
+    def _upper(self):
+        l = self.expression._lower()
+        u = self.expression._upper()
+        if funcs[self.name.lower()] == "sin":
+            k = np.pi / 2
+
+            # Find the smallest integer n such that L <= k + 2n*pi
+            n_start = np.ceil((l - k) / (2 * np.pi))
+            
+            # Find the largest integer n such that k + 2n*pi <= U
+            n_end = np.floor((u - k) / (2 * np.pi))
+            
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + 2 * n_start * np.pi
+                return 1
+            else: 
+                return max(np.sin(l),np.sin(u))
+            
+        elif funcs[self.name.lower()] == "cos":
+            k = 0 # This is the base case where cos(x) = -1
+
+            # Find the smallest integer n such that L <= k + 2n*pi
+            n_start = np.ceil((l- k) / (2 * np.pi))
+
+            # Find the largest integer n such that k + 2n*pi <= U
+            n_end = np.floor((u - k) / (2 * np.pi))
+
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + 2 * n_start * np.pi  # Any valid x in the range
+                return 1
+            else: 
+                return max(np.cos(l),np.cos(u))
+        elif funcs[self.name.lower()] == "tan":
+            k = np.pi / 2  # This is the base point where the asymptote occurs.
+
+            # Find the smallest integer n such that L <= k + n*pi
+            n_start = np.ceil((l - k) / np.pi)
+
+            # Find the largest integer n such that k + n*pi <= U
+            n_end = np.floor((u - k) / np.pi)
+
+            # Check if there exists a valid n within the range
+            if n_start <= n_end:
+                x = k + n_start * np.pi  # Any valid x in the range
+                return np.inf
+            else:
+                return max(np.tan(l),np.tan(u))
+        return max(funcs[self.name.lower()](l),funcs[self.name.lower()](u))
+    
+    def sensitivity(self):
+        return max(abs(self._lower()), abs(self._upper()))
+
     def evaluate(self, bindings):
         exp = self.expression.evaluate(bindings)
         return funcs[self.name.lower()](exp)
@@ -323,6 +433,21 @@ class PowerFunction(SqlExpr):
 
     def type(self):
         return self.expression.type()
+
+    def _lower(self):
+        l = self.expression._lower()
+        u = self.expression._upper()
+        if self.power%2==0 and l*u<=0:
+            return 0
+        return min(l**self.power, u**self.power)
+    
+    def _upper(self):
+        l = self.expression._lower()
+        u = self.expression._upper()
+        return max(l**self.power, u**self.power)
+    
+    def sensitivity(self):
+        return max(abs(self._lower()), abs(self._upper()))
 
     def evaluate(self, bindings):
         exp = self.expression.evaluate(bindings)

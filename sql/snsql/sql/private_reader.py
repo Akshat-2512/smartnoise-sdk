@@ -521,6 +521,8 @@ class PrivateReader(Reader):
         # get a list of mechanisms in column order
         mechs = self._get_mechanisms(subquery)
         check_sens = [m for m in mechs if m]
+        print(source_col_names)
+        print([m.sensitivity for m in mechs])
         if any([m.sensitivity is np.inf for m in check_sens]):
             raise ValueError(f"Attempting to query an unbounded column")
         kc_pos = self._get_keycount_position(subquery)
