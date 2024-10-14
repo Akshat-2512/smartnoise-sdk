@@ -1,0 +1,17 @@
+1. Improved sensitivity calulation for arithmetic expression 
+2. Added functions to calculate sensitivity for math functions and power functions
+
+ARITHMETIC EXPRESSION
+    lower = min of all the 4 possible values
+    upper = max of all the 4 possible values
+    sensitivity = max(abs(lower) , abs(upper))
+    #to do this had to add _lower and _uppper calulation for all underlying expression initially it was calculating using sensitivity of underlying expression
+
+MATH FUNCTIONS
+    there was no sensitivity calulation for math functions like abs , sin , square , sqrt etc
+    added sensitivity calculation function - for monotonic function it was lower = min(l,u) upper = max(l,u) 
+    for non montonic like sin , cos , abs check for global minimum exist in the range or not 
+
+POWER FUNCTIONS
+    same as math functions , just need to check for ( l*u<=0 and power%2==0 )
+    

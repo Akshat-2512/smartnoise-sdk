@@ -1,0 +1,127 @@
+postgres:
+  public:
+    Customers:
+      row_privacy: True
+      CustomerID:
+        type : int
+        lower: 1
+        upper: 5
+      CustomerName:
+        type: string
+      City:
+        type: string
+    Orders:
+      row_privacy: True
+      OrderID:
+        type: int
+        lower: 100
+        upper: 105
+      CustomerID:
+        type: int
+        lower: 1
+        upper: 5
+      OrderDate:
+        type: datetime
+      Amount:
+        type: float
+        lower: 100.00
+        upper: 1000.00
+    Products:
+      row_privacy: True
+      ProductID:
+        type: int
+        lower: 1
+        upper: 5
+      ProductName:
+        type: string
+      Price:
+        type: float
+        lower: 100.00
+        upper: 1000.00
+    OrderDetails:
+      row_privacy: True
+      OrderDetailID:
+        type: int
+        lower: 1
+        upper: 5
+      OrderID:
+        type: int
+        lower: 100
+        uppper: 105
+      ProductID:
+        type: int
+        lower: 1
+        upper: 5
+      Quantity:
+        type: int
+        lower: 1 
+        upper: 5
+
+    my_table:
+      row_privacy: True
+      id:
+        type: int
+        lower: 1
+        upper: 100000000
+      num1:
+        type: int
+        lower: 1
+        upper: 100
+      str1:
+        type: string
+      str2:
+        type: string
+      num2:
+        type: int
+        lower: 1
+        upper: 100
+      num3:
+        type: int
+        lower: 1
+        upper: 100
+    my_table2:
+      row_privacy: True
+      id:
+        type: int
+        lower: 1
+        upper: 20000
+      num1:
+        type: int
+        lower: 1
+        upper: 100
+      str1:
+        type: string
+      str2:
+        type: string
+      num2:
+        type: int
+        lower: 1
+        upper: 100
+      num3:
+        type: int
+        lower: 1
+        upper: 100
+    my_table3:
+      row_privacy: True
+      id:
+        type: int
+        lower: 1
+        upper: 20000
+      num1:
+        type: int
+        lower: 1
+        upper: 100
+      str1:
+        type: string
+      str2:
+        type: string
+      num2:
+        type: int
+        lower: 1
+        upper: 100
+      num3:
+        type: int
+        lower: 1
+        upper: 100
+
+    

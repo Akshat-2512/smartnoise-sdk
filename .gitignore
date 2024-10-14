@@ -131,3 +131,7 @@ PUMS_1000.csv
 
 # parquet files
 PUMS_large.parquet/
+
+#try file
+sql/try.py
+smartnoise
