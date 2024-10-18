@@ -63,9 +63,11 @@ class QueryConstraints:
             if n_aggs > 0:
                 # It's a column that uses an aggregate, such as SUM, COUNT, etc.
                 for ac in aggfuncs:
-                    # if not isinstance(ac.expression, (TableColumn, AllColumns)):
+                    # if not isinstance(ac.expression, (TableColumn, AllColumns, )):
                         # should allow literals here?  any scalar that doesn't include a 
                         # raise ValueError("We don't support aggregation over expressions: " + str(ac))
+                    if isinstance (ac.expression, Literal):
+                        raise ValueError(f"Aggregations over Litreals are not allowed, got {ac.expression}")
                     if ac.expression.type() not in ['int', 'float', 'bool'] and not ac.name == 'COUNT':
                         raise ValueError(f"Aggregations must be over numeric or boolean, got {ac.expression.type()} in {str(ac)}")
             else:
@@ -81,7 +83,6 @@ class QueryConstraints:
                     if not match:
                         raise ValueError(f"Column {s.name if s.name else ''} does not include an aggregate and is not included in GROUP BY: {str(s.expression)}")
                 else:
-                    # it's a bare/literal expression
                     pass
 
 

@@ -2,7 +2,6 @@ from snsql._ast.tokens import *
 import operator
 import numpy as np
 from datetime import datetime, date
-
 ops = {
     ">": operator.gt,
     "<": operator.lt,

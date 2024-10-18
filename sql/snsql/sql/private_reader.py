@@ -13,8 +13,9 @@ from .parse import QueryParser
 from .reader import PandasReader
 from .reader.base import SortKeyExpressions
 
-from snsql._ast.ast import Query, Top
+from snsql._ast.ast import Query, Top , Table
 from snsql._ast.expressions import sql as ast
+from snsql._ast.tokens import *
 from snsql._ast.expressions.date import parse_datetime
 from snsql.reader import Reader
 
@@ -241,6 +242,33 @@ class PrivateReader(Reader):
             for epsilon, delta in costs:
                 odo.spend(Privacy(epsilon=epsilon, delta=delta))
         return odo.spent
+    
+
+    def where_metadata_changes(self , query):
+        ranges = query.where.ranges[0]
+        for key, pairs in ranges.items():
+            for pair in pairs:
+                lower = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower
+                upper = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper
+                if isinstance(pair[0],str) and pair[0]==pair[1]:
+                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
+                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, lower_range)
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper = min(upper, upper_range)
+                elif isinstance(pair[0],str) and pair[1] == float('-inf'):
+                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
+                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, lower_range)
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper = min(upper, upper_range)
+                elif isinstance(pair[1],str) and pair[0] == float('-inf'):
+                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).lower
+                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper =  min(upper, upper_range)
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).lower = max(lower, lower_range)
+                else:
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, pair[0])
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper = min(upper, pair[1])  
+        return
 
     def parse_query_string(self, query_string) -> Query:
         """Parse a query string, returning an AST `Query` object.
@@ -256,6 +284,7 @@ class PrivateReader(Reader):
 
         """
         queries = QueryParser(self.metadata).queries(query_string)
+        self.where_metadata_changes(queries[0])
         if len(queries) > 1:
             raise ValueError("Too many queries provided.  We can only execute one query at a time.")
         elif len(queries) == 0:
@@ -481,12 +510,12 @@ class PrivateReader(Reader):
             postprocess=postprocess
         )
 
+
     def _execute_ast(self, query, *ignore, accuracy:bool=False, pre_aggregated=None, postprocess=True):
         if isinstance(query, str):
             raise ValueError("Please pass AST to _execute_ast.")
 
         _orig_query = query
-
         agg_names = []
         for col in _orig_query.select.namedExpressions:
             if isinstance(col.expression, ast.AggFunction):
@@ -510,18 +539,15 @@ class PrivateReader(Reader):
         _accuracy = None
         if accuracy:
             raise NotImplementedError("Simple accuracy has been removed.  Please see documentation for information on estimating accuracy.")
-
         syms = subquery._select_symbols
+
         source_col_names = [s.name for s in syms]
-
-
         # tell which are counts, in column order
         is_count = [s.expression.is_count for s in syms]
-
         # get a list of mechanisms in column order
         mechs = self._get_mechanisms(subquery)
         check_sens = [m for m in mechs if m]
-        print(source_col_names)
+        # change sensitivity according to range of where
         print([m.sensitivity for m in mechs])
         if any([m.sensitivity is np.inf for m in check_sens]):
             raise ValueError(f"Attempting to query an unbounded column")
@@ -551,6 +577,8 @@ class PrivateReader(Reader):
             out = map(randomize_row_values, exact_aggregates)
         else:
             raise ValueError("Unexpected type for exact_aggregates")
+
+        print(exact_aggregates)
 
         # censor infrequent dimensions
         if self._options.censor_dims:

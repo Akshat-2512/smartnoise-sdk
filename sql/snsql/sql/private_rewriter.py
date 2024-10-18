@@ -179,7 +179,6 @@ class Rewriter:
         if query.agg is not None:
             for ge in query.agg.groupingExpressions:
                 child_scope.push_name(ge.expression)
-
         select = []
         for ne in query.select.namedExpressions:
             expr = ne.expression
@@ -191,7 +190,6 @@ class Rewriter:
                         expr = Column(child_scope.push_name(ge.expression))
             if is_grouping:
                 select.append(NamedExpression(ne.name, expr))
-               
             else:
                 select.append(self.rewrite_outer_named_expression(ne, child_scope)) 
         select = Select(query.select.quantifier, select)
@@ -200,11 +198,10 @@ class Rewriter:
         )
         subquery = self.exact_aggregates(subquery)
         subquery = [Relation(AliasedSubquery(subquery, Identifier("exact_aggregates")), None)]
-        return Query(select, From(subquery), None, None, query.having, query.order, query.limit, metadata=self.metadata, privacy=self.privacy)
+        return Query(select, From(subquery), None , None, query.having, query.order, query.limit, metadata=self.metadata, privacy=self.privacy)
 
     def exact_aggregates(self, query):
         child_scope = Scope()
-
         for ne in query.select.namedExpressions:
             child_scope.push_name(ne.expression)
 

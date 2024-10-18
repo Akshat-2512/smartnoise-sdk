@@ -9,6 +9,7 @@ import warnings
     Lexer and parser token names borrowed from SparkSQL Grammar.
 """
 
+precedence = {'NOT': 3, 'AND': 2, 'OR': 1}
 
 class Batch(Sql):
     """A batch of queries"""
@@ -38,7 +39,6 @@ class Query(SqlRel):
 
         self._named_symbols = None
         self._select_symbols = None
-
         if metadata:
             self.load_symbols(metadata, privacy=privacy)
 
@@ -63,7 +63,6 @@ class Query(SqlRel):
             self.clamp_counts = any(tc.clamp_counts for tc in tables)
             self.clamp_columns = any(tc.clamp_columns for tc in tables)
             self.use_dpsu = any(tc.use_dpsu for tc in tables)
-
         # get grouping expression symbols
         self._grouping_symbols = []
         if self.agg:
@@ -84,7 +83,6 @@ class Query(SqlRel):
                     else:
                         raise err
                 self._grouping_symbols.append(Symbol(symb))
-
 
         # get namedExpression symbols
         _symbols = []
@@ -139,7 +137,6 @@ class Query(SqlRel):
 
         self._select_symbols = _symbols
         self._named_symbols = {}
-
         for sym in self._select_symbols:
             if sym.name == "???":
                 continue
@@ -231,10 +228,128 @@ class From(Sql):
 
 class Where(Sql):
     """Predicates."""
-
     def __init__(self, condition):
         self.condition = condition
+        self.leaf_nodes = self.get_leaf_nodes(condition)
+        self.ranges = self.evaluate_of_nodes()
+        
+    def get_leaf_nodes(self, token):
+        # Check if the token has a 'children' method
+        if hasattr(token, 'children'):
+            children = token.children() or []  # Ensure we always get a list
+            # Filter out non-token children (like strings or None)
+            valid_children = [child for child in children if hasattr(child, 'children') and isinstance(child, BooleanCompare) or isinstance(child, NestedBoolean) or child == 'AND' or child == 'OR' or child == ")" or child =="("]
 
+            # If the token has valid children, recursively collect leaf nodes
+            if valid_children :
+                leaf_nodes = []
+                for child in valid_children:
+                    leaf_nodes.extend(self.get_leaf_nodes(child))
+                return leaf_nodes
+
+        # If no valid children, this is a leaf node
+        if isinstance(token, BooleanCompare) :
+            return [self.max_range(token)] 
+        return [token]
+    def union_of_expression(self, range_a:map , range_b:map)->map:
+        for key , pair in range_a.items():
+            range_a[key] = [(float('-inf'),float('inf'))]
+        for key, pair in range_b.items():
+            if key in range_a:
+                continue
+            else:
+                range_a[key] = [(float('-inf'),float('inf'))]
+        return range_a
+    def intersection_of_expression(self, range_a:map , range_b:map)->map:
+        for key,pair in range_b.items():
+            if key in range_a:
+                range_a[key].extend(range_b[key])
+            else:
+                range_a[key] = pair
+        return range_a
+    def evaluate_of_nodes(self):
+        output = []
+        nodes = self.postfix_of_nodes()
+        for node in nodes:
+            if node == 'AND':
+                top = output[-1]
+                output.pop()
+                top_2 = output[-1]
+                output.pop()
+                output.append(self.intersection_of_expression(top, top_2))
+            elif node == 'OR':
+                top = output[-1]
+                output.pop()
+                top_2 = output[-1]
+                output.pop()
+                output.append(self.union_of_expression(top, top_2))
+            else:
+                output.append(node)
+        return output
+
+    def postfix_of_nodes(self):
+        """Convert an infix boolean expression to postfix."""
+        output = []      # Stores the final postfix expression
+        operators = []   # Stack for operators and parentheses
+
+        for token in self.leaf_nodes:
+            token_name = token.__str__()
+            if token_name in precedence:
+                # Pop operators with higher or equal precedence
+                while (operators and operators[-1] != '(' and 
+                    precedence.get(operators[-1], 0) >= precedence[token_name]):
+                    output.append(operators.pop())
+                operators.append(token)
+
+            elif token_name == '(':
+                operators.append(token)  # Push opening parenthesis
+
+            elif token_name == ')':
+                # Pop until matching '(' is found
+                while operators and operators[-1] != '(':
+                    output.append(operators.pop())
+                operators.pop()  # Discard the '('
+
+            else:
+                # Token is a variable or boolean literal (True/False)
+                output.append(token)
+
+        # Pop any remaining operators
+        while operators:
+            output.append(operators.pop())
+
+        return output
+
+    def max_range(self , expression):
+        left = expression.left
+        op = expression.op
+        right = expression.right
+        if isinstance(left, Literal) and isinstance(right, Column):
+            left = expression.right
+            right = expression.left
+            if op == "<":
+                op = ">="
+            elif op == ">":
+                op = "<="
+            elif op == "<=":
+                op = ">"
+            elif op == ">=":
+                op = "<"
+        if op == "<" or op == "<=":
+            if hasattr(right, 'value'):
+                return  {left.__str__() : [(float('-inf'), right.value)]}
+            return {left.__str__() : [(float('-inf'), right.__str__())]}
+        elif op == ">" or op ==">=":
+            if hasattr(right, 'value'):
+                return  {left.__str__() : [(right.value, float('inf'))]}
+            return {left.__str__() : [(right.__str__(), float('inf'))]}
+        elif op == "=":
+            if hasattr(right, 'value'):
+                return  {left.__str__() : [(right.value, right.value)]}
+            return {left.__str__() : [(right.__str__(), right.__str__())]}
+        elif op == "!=" or "<>":
+            return {left.__str__() : [(float('-inf') ,float('inf'))]}
+        return {left.__str__(): [(float('-inf') ,float('inf'))]}
     def children(self):
         return [Token("WHERE"), self.condition]
 

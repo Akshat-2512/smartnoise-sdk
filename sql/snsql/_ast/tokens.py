@@ -420,7 +420,7 @@ class Literal(SqlExpr):
 
     def __hash__(self):
         return hash(self.text)
-
+    
     def symbol(self, relations):
         return self
 

@@ -19,7 +19,7 @@ privacy = Privacy(epsilon=1.0, delta=0.01)
 
 reader = snsql.from_connection(conn, privacy=privacy, metadata=meta_path)
 
-result = reader.execute("SELECT SUM((log(num1))) FROM public.my_table2")
+result = reader.execute("SELECT SUM(num1)  FROM public.my_table2 WHERE  num1 < num2" )
 
 print(result)
 
