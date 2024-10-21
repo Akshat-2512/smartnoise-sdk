@@ -248,21 +248,34 @@ class PrivateReader(Reader):
         ranges = query.where.ranges[0]
         for key, pairs in ranges.items():
             for pair in pairs:
-                lower = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower
-                upper = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper
+                value = self.metadata[query.source.relations[0].__str__()][key]
+                if hasattr(value, 'lower') and hasattr(value, 'upper'):
+                    lower = value.lower
+                    upper = value.upper
+                else:
+                    return
                 if isinstance(pair[0],str) and pair[0]==pair[1]:
-                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
-                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    if hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]), 'lower') and hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]), 'upper'):
+                        lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
+                        upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    else:
+                        return
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, lower_range)
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper = min(upper, upper_range)
                 elif isinstance(pair[0],str) and pair[1] == float('-inf'):
-                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
-                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper
+                    if hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]), 'lower') and hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]), 'upper'):
+                        lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
+                        upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper
+                    else:
+                        return
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, lower_range)
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper = min(upper, upper_range)
                 elif isinstance(pair[1],str) and pair[0] == float('-inf'):
-                    lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).lower
-                    upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    if hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]), 'lower') and hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]), 'upper'):
+                        lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).lower
+                        upper_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).upper
+                    else:
+                        return
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper =  min(upper, upper_range)
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[1]).lower = max(lower, lower_range)
                 else:
