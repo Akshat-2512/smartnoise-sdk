@@ -87,7 +87,34 @@ class AggFunction(SqlExpr):
             return "float"
         else:
             return "unknown"
-
+    def _lower(self):
+        if self.name == "SUM":
+            return self.expression._lower()
+        elif self.name == "COUNT":
+            #had to keep 1 rather than zero -> SUM()/COUNT() and now the sensitivity calculation will be done by using lower and upper so lower cant have zero
+            # sensitivity will still be 1 so no worries about that. And for all the airthmetic involving count will have lower equal upper equal sensitivity equal 1 so other expression is also have correct sensitivity
+            return 1
+        elif self.name == "AVG":
+            return self.expression._lower()
+        elif self.name == "MIN":
+            return self.expression._lower()
+        elif self.name == "MAX":
+            return self.expression._lower()
+        else:
+            return None
+    def _upper(self):
+        if self.name == "SUM":
+            return self.expression._upper()
+        elif self.name == "COUNT":
+            return 1
+        elif self.name == "AVG":
+            return self.expression._upper()
+        elif self.name == "MIN":
+            return self.expression._upper()
+        elif self.name == "MAX":
+            return self.expression._upper()
+        else:
+            return None
     def sensitivity(self):
         # will switch to lookup table
         if self.name == "SUM":
