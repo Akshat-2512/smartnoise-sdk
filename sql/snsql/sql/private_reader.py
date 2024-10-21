@@ -262,6 +262,8 @@ class PrivateReader(Reader):
                         return
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).lower = max(lower, lower_range)
                     self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(key).upper = min(upper, upper_range)
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower = max(lower, lower_range)
+                    self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).upper = min(upper, upper_range)
                 elif isinstance(pair[0],str) and pair[1] == float('-inf'):
                     if hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]), 'lower') and hasattr(self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]), 'upper'):
                         lower_range = self.metadata.__getitem__(query.source.relations[0].__str__()).__getitem__(pair[0]).lower
